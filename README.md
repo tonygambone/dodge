@@ -21,3 +21,11 @@ Python 3 required. Tested under Python 3.7.4.
 pip install -r requirements.txt
 python main.py
 ```
+
+## Screenshot
+
+![screenshot](screenshot.png)
+
+## High scores:
+
+* @tonygambone - 176

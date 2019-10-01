@@ -23,6 +23,7 @@ class GameRunner: # pylint: disable=too-few-public-methods
         self.screen = pg.display.set_mode(self.size)
         self.player_pos_y = self.height - c.PLAYER_SPRITE_HOVER
         self.player_height = c.PLAYER_SPRITE_HEIGHT
+        self._close_call_timer = 0
 
     def _handle_event(self, event):
         LOG.debug("Handling event type %s", event.type)
@@ -36,6 +37,7 @@ class GameRunner: # pylint: disable=too-few-public-methods
             elif event.key == pg.K_RIGHT:
                 self.game.move_player_right()
             elif event.key == pg.K_r:
+                self._close_call_timer = 0
                 self.game.reset()
             elif event.key == pg.K_p:
                 self.game.toggle_pause()
@@ -62,6 +64,16 @@ class GameRunner: # pylint: disable=too-few-public-methods
         for obs in self.game.obstacles:
             rect = self._get_rect(obs.lane, obs.pos)
             pg.draw.rect(self.screen, obs_color, rect)
+
+        # draw close call indicator
+        if self.game.close_call and not self.game.collision:
+            self._close_call_timer = c.TARGET_FRAMERATE * 2
+        if self._close_call_timer > 0 and not self.game.collision:
+            self.font.render_to(self.screen,
+                                c.CLOSE_CALL_POSITION,
+                                f"Close call! +{c.CLOSE_CALL_POINTS}",
+                                c.CLOSE_CALL_COLOR)
+            self._close_call_timer = self._close_call_timer - 1
 
         # draw score
         self.font.render_to(self.screen, c.SCORE_POSITION, str(self.game.score), score_color)

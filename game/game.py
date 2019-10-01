@@ -1,7 +1,10 @@
 """Implementation of the game logic."""
 
+import logging
 import random
 from . import constants as c
+
+LOG = logging.getLogger(__name__)
 
 class Game: # pylint: disable=too-many-instance-attributes
     """Game logic instance."""
@@ -15,6 +18,7 @@ class Game: # pylint: disable=too-many-instance-attributes
         self._seconds_since_last_obstacle = None
         self._obstacles = None
         self._collision = None
+        self._close_call = None
         self._paused = None
         self.reset()
 
@@ -52,13 +56,24 @@ class Game: # pylint: disable=too-many-instance-attributes
             self._seconds_since_last_obstacle = 0
 
     def _detect_collision(self):
-        """Detect if there's a collision with an obstacle."""
-        obs_min_y = c.SCREEN_HEIGHT - c.PLAYER_SPRITE_HOVER - c.PLAYER_SPRITE_HEIGHT
-        obs_max_y = c.SCREEN_HEIGHT - c.PLAYER_SPRITE_HOVER + c.PLAYER_SPRITE_HEIGHT
-        self._collision = len([obs for obs in self._obstacles if
-                               obs.lane == self._player_lane
-                               and obs.pos >= obs_min_y
-                               and obs.pos <= obs_max_y]) > 0
+        """Detect if there's a collision or a close call with an obstacle."""
+        coll_min_y = c.SCREEN_HEIGHT - c.PLAYER_SPRITE_HOVER - c.PLAYER_SPRITE_HEIGHT
+        coll_max_y = c.SCREEN_HEIGHT - c.PLAYER_SPRITE_HOVER + c.PLAYER_SPRITE_HEIGHT
+        cc_min_y = coll_min_y - c.CLOSE_CALL_THRESHOLD
+        cc_max_y = coll_max_y + c.CLOSE_CALL_THRESHOLD
+
+        close_obstacles = [obs for obs in self._obstacles if
+                           obs.lane == self._player_lane
+                           and obs.pos >= cc_min_y
+                           and obs.pos <= cc_max_y]
+        collision_obstacles = [obs for obs in close_obstacles if
+                               obs.pos >= coll_min_y
+                               and obs.pos <= coll_max_y]
+        self._collision = len(collision_obstacles) > 0
+        self._close_call = not self._collision and len(close_obstacles) > 0
+        if self._close_call:
+            self._score = self._score + c.CLOSE_CALL_POINTS
+            LOG.debug("Close call!")
 
     def advance_time(self, milliseconds):
         """Advance the game time by a certain number of milliseconds."""
@@ -69,12 +84,14 @@ class Game: # pylint: disable=too-many-instance-attributes
 
     def reset(self):
         """Resets the game to its original state."""
+        LOG.info("New game")
         self._score = 0
         self._player_lane = c.DEFAULT_LANE_COUNT // 2
         self._lane_count = c.DEFAULT_LANE_COUNT
         self._seconds_since_last_obstacle = 0
         self._obstacles = []
         self._collision = False
+        self._close_call = False
         self._paused = False
 
     def toggle_pause(self):
@@ -105,6 +122,11 @@ class Game: # pylint: disable=too-many-instance-attributes
     def score(self):
         """The current score"""
         return self._score
+
+    @property
+    def close_call(self):
+        """Whether the player is close to, but not touching, an obstacle."""
+        return self._close_call
 
 class Obstacle: # pylint: disable=too-few-public-methods
     """Represents one obstacle in the game."""

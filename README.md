@@ -4,7 +4,8 @@ An obstacle-dodging arcade game written in Python.
 
 ## Objective
 
-Dodge the incoming obstacles as long as possible.
+Dodge the incoming obstacles as long as possible to achieve a high score. Bonuses are awarded if you
+narrowly avoid colliding with an obstacle.
 
 ## Controls
 
@@ -13,6 +14,8 @@ Dodge the incoming obstacles as long as possible.
 * **R** - reset the game
 
 ## Running
+
+Python 3 required. Tested under Python 3.7.4.
 
 ```
 pip install -r requirements.txt
